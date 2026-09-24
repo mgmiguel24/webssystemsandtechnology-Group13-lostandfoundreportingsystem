@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Lost & Found Hub</title>
+    <!-- Tailwind CSS CDN for modern utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons for modern minimalist iconography -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        // Custom Tailwind theme setup for smooth dark mode support
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for modern UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Header / Navbar Section -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="ph-bold ph-magnifying-glass text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">FindMe</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Community Lost & Found</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-3">
+                <!-- Dark Mode Toggle Button -->
+                <button onclick="toggleDarkMode()" class="p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition" title="Toggle Theme">
+                    <i id="theme-icon" class="ph-bold ph-moon text-xl"></i>
+                </button>
+
+                <!-- User Profile / Session Display Badge -->
+                <div id="user-display" class="hidden items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-sm">
+                    <i class="ph-bold ph-user-circle text-brand-600 text-lg"></i>
+                    <span id="username-val" class="font-medium">Guest</span>
+                    <span id="role-badge" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">User</span>
+                </div>
+
+                <!-- Unauthenticated Login / Register Button -->
+                <button id="login-btn" onclick="openAuthModal('login')" class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-xl text-sm transition">
+                    Login / Register
+                </button>
+
+                <!-- Authenticated Logout Button -->
+                <button id="logout-btn" onclick="handleLogout()" class="hidden px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 font-medium rounded-xl text-sm transition">
+                    Logout
+                </button>
+
+                <!-- Create Report Action Button -->
+                <button onclick="openReportModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm transition shadow-md shadow-brand-500/20 flex items-center space-x-2">
+                    <i class="ph-bold ph-plus"></i>
+                    <span class="hidden sm:inline">New Report</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- Controls: Search and Multi-criteria Filters -->
+        <section class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 mb-8 space-y-4">
+            
+            <!-- Search Keyword Bar -->
+            <div class="relative">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" id="search-input" oninput="filterReports()" placeholder="Search keywords, items, titles, or locations..." 
+                    class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm transition">
+            </div>
+
+            <!-- Multi-Select Filters Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <select id="filter-type" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Types (Lost & Found)</option>
+                    <option value="Lost">Lost</option>
+                    <option value="Found">Found</option>
+                </select>
+
+                <select id="filter-category" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Categories</option>
+                    <option value="Person">Person</option>
+                    <option value="Pet">Pet</option>
+                    <option value="Item">Item</option>
+                </select>
+
+                <select id="filter-status" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Case Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+
+                <input type="date" id="filter-date" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+        </section>
+
+        <!-- Dynamic Card Grid -->
+        <section id="reports-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Dynamically populated via JS -->
+        </section>
+
+        <!-- Empty Results State -->
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <i class="ph-bold ph-tray text-2xl"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">No reports matching your criteria</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm">Try adjusting your filters or search keywords.</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 bg-white dark:bg-slate-900">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            Lost and Found Community Assistance System &copy; 2026. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- MODAL: User Authentication (Login & Registration Tabs) -->
+    <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+            
+            <!-- Modal Navigation Tabs -->
+            <div class="flex border-b border-slate-200 dark:border-slate-700 mb-6">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">
+                    Sign In
+                </button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600">
+                    Register Account
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="user@example.com" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">
+                    Log In
+                </button>
+            </form>
+
+            <!-- Registration Form -->
+            <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Full Name / Username</label>
+                    <input type="text" id="reg-username" required placeholder="John Doe" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="reg-email" required placeholder="john@example.com" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                    <input type="password" id="reg-password" required placeholder="••••••••" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Account Role</label>
+                    <select id="reg-role" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                        <option value="user">Regular User</option>
+                        <option value="admin">System Administrator</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">
+                    Create Account
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Submit Case Report -->
+    <div id="report-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('report-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-1">File a Community Report</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-xs mb-6">Fill in details accurately to increase chances of recovery.</p>
+
+            <form id="report-form" onsubmit="handleReportSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Report Type</label>
+                        <select id="report-type" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                            <option value="Lost">I Lost Something</option>
+                            <option value="Found">I Found Something</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                        <select id="report-category" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                            <option value="Person">Person</option>
+                            <option value="Pet">Pet</option>
+                            <option value="Item">Item</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Title / Identifier</label>
+                    <input type="text" id="report-title" required placeholder="e.g., Gold Retriever or Black Leather Wallet" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Location</label>
+                        <input type="text" id="report-location" required placeholder="e.g., Central Park East" 
+                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Date Occurred</label>
+                        <input type="date" id="report-date" required 
+                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Detailed Description</label>
+                    <textarea id="report-desc" rows="3" required placeholder="Include specific characteristics, markings, clothing, unique IDs, etc." 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contact Information</label>
+                    <input type="text" id="report-contact" required placeholder="Phone number or direct email" 
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Photo Attachment</label>
+                    <input type="file" id="report-image" accept="image/*" onchange="previewImage(event)" 
+                        class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    <img id="image-preview" class="hidden mt-2 rounded-xl h-32 w-full object-cover border border-slate-200 dark:border-slate-700">
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">
+                    Submit Case Report
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Detailed Report View -->
+    <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('detail-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 z-10">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+            <div id="detail-content">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /**
+         * Global In-Memory Database Stores
+         */
+        
+        // Mock Registered Users Database initialized with default User & Admin credentials
+        let users = JSON.parse(localStorage.getItem('findme_users')) || [
+            { id: 1, name: 'Regular User', email: 'user@example.com', password: 'password123', role: 'user' },
+            { id: 2, name: 'System Admin', email: 'admin@example.com', password: 'admin123', role: 'admin' }
+        ];
+
+        // Mock System Reports Dataset
+        let reports = JSON.parse(localStorage.getItem('findme_reports')) || [
+            {
+                id: 1,
+                type: 'Lost',
+                category: 'Pet',
+                title: 'Bella (Golden Retriever)',
+                location: 'Greenwood Park Area',
+                date: '2026-08-28',
+                description: 'Friendly golden retriever, wearing a red leather collar with brass tags. Missing since late evening.',
+                contact: '555-0199 / owner@example.com',
+                status: 'Active',
+                reporterEmail: 'user@example.com',
+                reporterName: 'Regular User',
+                image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80'
+            },
+            {
+                id: 2,
+                type: 'Found',
+                category: 'Item',
+                title: 'Leather Wallet & Keys',
+                location: 'Central Metro Station',
+                date: '2026-08-30',
+                description: 'Found brown leather wallet containing travel pass and a set of three silver keys.',
+                contact: '555-0182 / finder@example.com',
+                status: 'Active',
+                reporterEmail: 'admin@example.com',
+                reporterName: 'System Admin',
+                image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80'
+            }
+        ];
+
+        // Active Session Tracking Object
+        let currentUser = JSON.parse(localStorage.getItem('findme_session')) || null;
+
+        /**
+         * Initializes application state and UI upon DOM loading completion.
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            // Function call: Syncs stored user session to the interface controls
+            updateUserHeaderUI();
+            // Function call: Renders the report collection into the card grid
+            renderReports(reports);
+        });
+
+        /**
+         * Function: Persists current memory arrays into localStorage.
+         */
+        function saveData() {
+            // Converts users array to string and saves to browser storage
+            localStorage.setItem('findme_users', JSON.stringify(users));
+            // Converts reports array to string and saves to browser storage
+            localStorage.setItem('findme_reports', JSON.stringify(reports));
+            // Saves active logged-in user profile to browser session storage
+            localStorage.setItem('findme_session', JSON.stringify(currentUser));
+        }
+
+        /**
+         * Function: Toggles interface theme between Light and Dark modes.
+         */
+        function toggleDarkMode() {
+            // Toggles the class 'dark' on the html body element
+            const isDark = document.body.classList.toggle('dark');
+            // Selects the icon container inside the toggle button
+            const icon = document.getElementById('theme-icon');
+            // Replaces icon classes depending on the newly set theme state
+            if (isDark) {
+                icon.className = 'ph-bold ph-sun text-xl text-yellow-400';
+            } else {
+                icon.className = 'ph-bold ph-moon text-xl';
+            }
+        }
+
+        /**
+         * Function: Shows a target modal container by element ID.
+         * @param {string} id - HTML element ID of the target modal.
+         */
+        function openModal(id) {
+            // Removes 'hidden' class to trigger CSS display
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        /**
+         * Function: Hides a target modal container by element ID.
+         * @param {string} id - HTML element ID of the target modal.
+         */
+        function closeModal(id) {
+            // Adds 'hidden' class to hide modal overlay
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        /**
+         * Function: Displays the authentication modal and switches to requested tab.
+         * @param {string} defaultTab - Tab name ('login' or 'register').
+         */
+        function openAuthModal(defaultTab = 'login') {
+            // Function call: Sets active form tab visually
+            switchAuthTab(defaultTab);
+            // Function call: Unhides authentication modal dialog
+            openModal('auth-modal');
+        }
+
+        /**
+         * Function: Switches active view tab between Login and Registration forms.
+         * @param {string} tab - Selected target view ('login' or 'register').
+         */
+        function switchAuthTab(tab) {
+            // Gets references to authentication modal tab buttons and form views
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+            const formLogin = document.getElementById('login-form');
+            const formReg = document.getElementById('register-form');
+
+            if (tab === 'login') {
+                // Adjusts active border styles for Login tab
+                tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600';
+                tabReg.className = 'flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600';
+                // Shows login form and hides register form
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+            } else {
+                // Adjusts active border styles for Register tab
+                tabReg.className = 'flex-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600';
+                tabLogin.className = 'flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600';
+                // Shows register form and hides login form
+                formReg.classList.remove('hidden');
+                formLogin.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Function: Process submit event for User Registration form.
+         * @param {Event} e - Form submission event object.
+         */
+        function handleRegisterSubmit(e) {
+            // Prevents full browser page refresh on submission
+            e.preventDefault();
+            // Reads user inputs from registration input fields
+            const name = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+
+            // Checks if email address is already registered in mock user list
+            const existingUser = users.find(u => u.email === email);
+            if (existingUser) {
+                alert('An account with this email already exists. Please login instead.');
+                return;
+            }
+
+            // Constructs new user data record
+            const newUser = { id: Date.now(), name, email, password, role };
+            // Pushes new user record to in-memory users array
+            users.push(newUser);
+            // Sets active application session to newly created user
+            currentUser = { name: newUser.name, email: newUser.email, role: newUser.role };
+
+            // Function call: Saves updated states to local storage
+            saveData();
+            // Function call: Updates user badge display in header navigation bar
+            updateUserHeaderUI();
+            // Function call: Closes the authentication modal
+            closeModal('auth-modal');
+            // Resets form fields back to default empty states
+            document.getElementById('register-form').reset();
+            // Rerenders grid to reflect updated access permissions
+            renderReports(reports);
+        }
+
+        /**
+         * Function: Process submit event for Login form.
+         * @param {Event} e - Form submission event object.
+         */
+        function handleLoginSubmit(e) {
+            // Prevents full browser page refresh on submission
+            e.preventDefault();
+            // Reads user login inputs
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+
+            // Finds matching user by matching email and password credentials
+            const user = users.find(u => u.email === email && u.password === password);
+
+            if (!user) {
+                alert('Invalid email or password credentials. Please try again.');
+                return;
+            }
+
+            // Sets global session to found authenticated user profile
+            currentUser = { name: user.name, email: user.email, role: user.role };
+            // Function call: Saves updated active session to browser local storage
+            saveData();
+            // Function call: Updates header UI with authenticated user identity
+            updateUserHeaderUI();
+            // Function call: Closes authentication modal window
+            closeModal('auth-modal');
+            // Resets input controls on login form
+            document.getElementById('login-form').reset();
+            // Function call: Re-filters and re-renders report view with new role permissions
+            filterReports();
+        }
+
+        /**
+         * Function: Destroys current active login session and logs out user.
+         */
+        function handleLogout() {
+            // Resets current session state back to null
+            currentUser = null;
+            // Clears saved session key inside local storage
+            localStorage.removeItem('findme_session');
+            // Function call: Updates header UI to unauthenticated state
+            updateUserHeaderUI();
+            // Function call: Refresh report list display
+            filterReports();
+        }
+
+        /**
+         * Function: Updates navbar buttons and user profile badges according to session state.
+         */
+        function updateUserHeaderUI() {
+            const userDisplay = document.getElementById('user-display');
+            const usernameVal = document.getElementById('username-val');
+            const roleBadge = document.getElementById('role-badge');
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (currentUser) {
+                // Populate profile label and user role badge
+                usernameVal.textContent = currentUser.name;
+                roleBadge.textContent = currentUser.role;
+
+                // Set badge styling depending on regular user vs administrator status
+                if (currentUser.role === 'admin') {
+                    roleBadge.className = 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+                } else {
+                    roleBadge.className = 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300';
+                }
+
+                // Show active profile container and logout button, hide login button
+                userDisplay.classList.remove('hidden');
+                userDisplay.classList.add('flex');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                // Hide profile badge and logout button, show login button
+                userDisplay.classList.add('hidden');
+                userDisplay.classList.remove('flex');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Function: Pre-checks session before displaying report submission form modal.
+         */
+        function openReportModal() {
+            if (!currentUser) {
+                alert('Please sign in or create an account to file a lost/found report.');
+                openAuthModal('login');
+                return;
+            }
+            openModal('report-modal');
+        }
+
+        /**
+         * Function: Reads uploaded image file and generates dynamic base64 URL preview.
+         * @param {Event} event - File input change event.
+         */
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('image-preview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Function: Process submit event for filing new reports.
+         * @param {Event} e - Form submit event object.
+         */
+        function handleReportSubmit(e) {
+            // Prevents full page reload
+            e.preventDefault();
+            // Gets file object from input element
+            const fileInput = document.getElementById('report-image');
+            const file = fileInput.files[0];
+
+            // Internal callback function to append completed report object
+            const finalizeSubmission = (imageDataUrl) => {
+                const newReport = {
+                    id: Date.now(),
+                    type: document.getElementById('report-type').value,
+                    category: document.getElementById('report-category').value,
+                    title: document.getElementById('report-title').value,
+                    location: document.getElementById('report-location').value,
+                    date: document.getElementById('report-date').value,
+                    description: document.getElementById('report-desc').value,
+                    contact: document.getElementById('report-contact').value,
+                    status: 'Active',
+                    reporterEmail: currentUser.email,
+                    reporterName: currentUser.name,
+                    image: imageDataUrl || 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=600&q=80'
+                };
+
+                // Inserts new case to top of report list
+                reports.unshift(newReport);
+                // Function call: Saves report array to local storage
+                saveData();
+                // Function call: Refreshes active view filter results
+                filterReports();
+                // Function call: Hides modal dialog
+                closeModal('report-modal');
+                // Clears form fields
+                document.getElementById('report-form').reset();
+                document.getElementById('image-preview').classList.add('hidden');
+            };
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => finalizeSubmission(reader.result);
+                reader.readAsDataURL(file);
+            } else {
+                finalizeSubmission(null);
+            }
+        }
+
+        /**
+         * Function: Filters list of reports based on search keywords and dropdown filters.
+         */
+        function filterReports() {
+            // Reads current values from control elements
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+            const categoryFilter = document.getElementById('filter-category').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            const dateFilter = document.getElementById('filter-date').value;
+
+            // Evaluates each item against filter rules
+            const filtered = reports.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(query) ||
+                                      item.description.toLowerCase().includes(query) ||
+                                      item.location.toLowerCase().includes(query);
+
+                const matchesType = !typeFilter || item.type === typeFilter;
+                const matchesCategory = !categoryFilter || item.category === categoryFilter;
+                const matchesStatus = !statusFilter || item.status === statusFilter;
+                const matchesDate = !dateFilter || item.date === dateFilter;
+
+                return matchesSearch && matchesType && matchesCategory && matchesStatus && matchesDate;
+            });
+
+            // Function call: Passes filtered array results to display renderer
+            renderReports(filtered);
+        }
+
+        /**
+         * Function: Clears all filter inputs and restores entire dataset view.
+         */
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-date').value = '';
+            renderReports(reports);
+        }
+
+        /**
+         * Function: Dynamically constructs and renders HTML cards into grid container.
+         * @param {Array} items - Array of report objects to display.
+         */
+        function renderReports(items) {
+            const grid = document.getElementById('reports-grid');
+            const emptyState = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            // Render empty state placeholder if array contains 0 items
+            if (items.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Loop over item dataset and generate card nodes
+            items.forEach(item => {
+                const isResolved = item.status === 'Resolved';
+                
+                // Color badge variables based on status and types
+                const badgeColor = isResolved 
+                    ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' 
+                    : (item.type === 'Lost' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300');
+
+                // Checks permissions: Admins or original author can manage card directly
+                const canManage = currentUser && (currentUser.role === 'admin' || currentUser.email === item.reporterEmail);
+
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group';
+                card.innerHTML = `
+                    <div class="relative h-48 bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                        <img src="${item.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="${escapeHtml(item.title)}">
+                        <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeColor}">
+                            ${isResolved ? 'Resolved' : item.type + ' • ' + item.category}
+                        </span>
+                        ${canManage ? `
+                            <span class="absolute top-3 right-3 px-2 py-1 bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-bold rounded-md">
+                                ${currentUser.role === 'admin' ? 'Admin Access' : 'Your Post'}
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-base mb-1 line-clamp-1">${escapeHtml(item.title)}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-1">
+                                <i class="ph-bold ph-map-pin mr-1"></i> ${escapeHtml(item.location)}
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-3">
+                                <i class="ph-bold ph-calendar mr-1"></i> ${item.date}
+                            </p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">${escapeHtml(item.description)}</p>
+                        </div>
+                        <button onclick="viewDetails(${item.id})" class="w-full py-2 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition">
+                            View Details
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /**
+         * Function: Generates detailed pop-up view modal for selected report.
+         * @param {number} id - Unique numeric ID of report.
+         */
+        function viewDetails(id) {
+            // Find target report by matching ID
+            const item = reports.find(r => r.id === id);
+            if (!item) return;
+
+            // Authorization Checks: Determines if user is Admin or the original owner of this report
+            const isOwner = currentUser && currentUser.email === item.reporterEmail;
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const canManage = isOwner || isAdmin;
+
+            const isResolved = item.status === 'Resolved';
+            const badgeColor = isResolved 
+                ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' 
+                : (item.type === 'Lost' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300');
+
+            const container = document.getElementById('detail-content');
+            container.innerHTML = `
+                <span class="inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-2 ${badgeColor}">
+                    ${isResolved ? 'Resolved' : item.type + ' • ' + item.category}
+                </span>
+                <h2 class="text-xl font-bold mb-3">${escapeHtml(item.title)}</h2>
+                <img src="${item.image}" class="w-full h-56 object-cover rounded-xl mb-4 border border-slate-200 dark:border-slate-700" alt="${escapeHtml(item.title)}">
+                
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    <div><strong>Location:</strong> ${escapeHtml(item.location)}</div>
+                    <div><strong>Date:</strong> ${item.date}</div>
+                    <div><strong>Reporter:</strong> ${escapeHtml(item.reporterName)}</div>
+                    <div><strong>Status:</strong> ${item.status}</div>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Description:</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">${escapeHtml(item.description)}</p>
+                </div>
+
+                <div class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 p-3 rounded-xl mb-6">
+                    <h4 class="text-xs font-semibold text-brand-700 dark:text-brand-300 mb-1 flex items-center">
+                        <i class="ph-bold ph-phone mr-1"></i> Contact Information
+                    </h4>
+                    <p class="text-xs text-brand-600 dark:text-brand-400 font-medium">${escapeHtml(item.contact)}</p>
+                </div>
+
+                <!-- Admin & Report Owner Action Management Bar -->
+                <div class="flex flex-col gap-2">
+                    ${canManage ? `
+                        <div class="flex gap-2">
+                            <button onclick="toggleReportStatus(${item.id})" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl transition">
+                                ${isResolved ? 'Reopen Case' : 'Mark as Resolved'}
+                            </button>
+                            ${isAdmin ? `
+                                <button onclick="deleteReport(${item.id})" class="py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-medium text-xs rounded-xl transition">
+                                    Delete Case
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    <button onclick="closeModal('detail-modal')" class="w-full py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-xl transition">
+                        Close
+                    </button>
+                </div>
+            `;
+
+            // Function call: Unhides detail view modal
+            openModal('detail-modal');
+        }
+
+        /**
+         * Function: Toggles status field of a report between 'Active' and 'Resolved'.
+         * @param {number} id - Target report numeric ID.
+         */
+        function toggleReportStatus(id) {
+            const item = reports.find(r => r.id === id);
+            if (item) {
+                // Flips status string
+                item.status = item.status === 'Resolved' ? 'Active' : 'Resolved';
+                // Function call: Saves updated array state to browser local storage
+                saveData();
+                // Function call: Refresh active background filters
+                filterReports();
+                // Function call: Refresh currently opened detail modal window
+                viewDetails(id);
+            }
+        }
+
+        /**
+         * Function: Admin Moderation Function - Completely removes a report.
+         * @param {number} id - Target report numeric ID.
+         */
+        function deleteReport(id) {
+            // Permission check: Enforces admin role access
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('Administrator permissions required to perform deletion.');
+                return;
+            }
+
+            if (confirm('Are you sure you want to permanently delete this report?')) {
+                // Filters out target report by ID
+                reports = reports.filter(r => r.id !== id);
+                // Function call: Saves modification to storage
+                saveData();
+                // Function call: Closes active details modal
+                closeModal('detail-modal');
+                // Function call: Updates main card grid
+                filterReports();
+            }
+        }
+
+        /**
+         * Function: Sanitizes user input string against XSS injections.
+         * @param {string} str - String to escape.
+         * @returns {string} Sanitized string.
+         */
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[m]);
+        }
+    </script>
+</body>
+</html>
