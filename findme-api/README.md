@@ -58,8 +58,3 @@ data/                  the database file
 tests/api.test.js      automated tests
 ```
 
-## Troubleshooting
-
-If the page shows without styling or icons, check your internet connection (Tailwind and the icons load from the web). If it still fails, set `CSP=off` in `.env` and restart.
-
-If `npm install` fails on `better-sqlite3`, use the current Node.js LTS release and run it again.
