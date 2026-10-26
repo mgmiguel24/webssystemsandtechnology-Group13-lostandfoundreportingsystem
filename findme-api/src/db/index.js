@@ -1,4 +1,3 @@
-// Opens the SQLite database, creates the tables, and seeds the first admin account.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -50,7 +49,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_events_report ON report_events (report_id);
 `);
 
-// First run only: create the admin account and two sample reports.
 function seed() {
   if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0) return;
 
@@ -67,38 +65,20 @@ function seed() {
     VALUES (@type, @category, @title, @location, @date, @description, @contact, @image_url, @reporter_id)`);
   const insertEvent = db.prepare("INSERT INTO report_events (report_id, user_id, action) VALUES (?, ?, 'Created')");
 
- const samples = [
-  {
-    type: 'Lost', category: 'Pet', title: 'Bella (Golden Retriever)', location: 'Greenwood Park Area', date: '2026-08-28',
-    description: 'Friendly golden retriever, wearing a red leather collar with brass tags. Missing since late evening.',
-    contact: '555-0199 / owner@example.com',
-    image_url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    type: 'Found', category: 'Item', title: 'Leather Wallet & Keys', location: 'Central Metro Station', date: '2026-08-30',
-    description: 'Found brown leather wallet containing travel pass and a set of three silver keys.',
-    contact: '555-0182 / finder@example.com',
-    image_url: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    type: 'Found', category: 'Pet', title: 'Orange Tabby Cat', location: 'Barangay Tala, Caloocan', date: '2026-09-10',
-    description: 'Found a friendly orange tabby cat near the basketball court, no collar. Appears well-fed and used to people.',
-    contact: '555-0163 / finder2@example.com',
-    image_url: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    type: 'Lost', category: 'Item', title: 'Black Samsung Phone', location: 'SM North EDSA, near Cinema entrance', date: '2026-09-18',
-    description: 'Black Samsung phone in a clear case with a cracked corner. Lock screen shows a dog photo.',
-    contact: '555-0128 / owner2@example.com',
-    image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    type: 'Found', category: 'Person', title: 'Lost Child Found Near Plaza', location: 'Bagumbong Plaza', date: '2026-09-22',
-    description: 'A young child, approximately 6-8 years old, found wandering alone near the plaza. Currently with barangay officials.',
-    contact: '555-0199 / barangay@example.com',
-    image_url: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=600&q=80',
-  },
-];
+  const samples = [
+    {
+      type: 'Lost', category: 'Pet', title: 'Bella (Golden Retriever)', location: 'Greenwood Park Area', date: '2026-08-28',
+      description: 'Friendly golden retriever, wearing a red leather collar with brass tags. Missing since late evening.',
+      contact: '555-0199 / owner@example.com',
+      image_url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      type: 'Found', category: 'Item', title: 'Leather Wallet & Keys', location: 'Central Metro Station', date: '2026-08-30',
+      description: 'Found brown leather wallet containing travel pass and a set of three silver keys.',
+      contact: '555-0182 / finder@example.com',
+      image_url: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80',
+    },
+  ];
   db.transaction(() => {
     for (const s of samples) {
       const id = insertReport.run({ ...s, reporter_id: adminId }).lastInsertRowid;

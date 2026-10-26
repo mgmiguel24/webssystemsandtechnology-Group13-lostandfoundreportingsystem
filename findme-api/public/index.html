@@ -85,7 +85,7 @@
                     class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm transition">
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
                 <select id="filter-type" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
                     <option value="">All Types (Lost & Found)</option>
                     <option value="Lost">Lost</option>
@@ -105,7 +105,15 @@
                     <option value="Resolved">Resolved</option>
                 </select>
 
-                <input type="date" id="filter-date" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <label for="filter-date-from" class="flex flex-col gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    From
+                    <input type="date" id="filter-date-from" onchange="filterReports()" aria-label="Date from" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </label>
+
+                <label for="filter-date-to" class="flex flex-col gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    To
+                    <input type="date" id="filter-date-to" onchange="filterReports()" aria-label="Date to" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </label>
             </div>
         </section>
 
@@ -134,8 +142,8 @@
     <!-- MODAL: Sign in / Register -->
     <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="ph-bold ph-x text-xl"></i>
+            <button type="button" aria-label="Close sign in or register modal" onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <span aria-hidden="true" class="text-2xl font-semibold leading-none">×</span>
             </button>
 
             <div class="flex border-b border-slate-200 dark:border-slate-700 mb-6">
@@ -154,7 +162,10 @@
                     <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••"
                         class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                 </div>
-                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Log In</button>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Log In</button>
+                    <button type="button" onclick="closeModal('auth-modal')" class="px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-xl text-sm transition">Cancel</button>
+                </div>
             </form>
 
             <!-- Role selection removed: every new account is a regular user. Admins are promoted by an existing admin. -->
@@ -174,7 +185,10 @@
                     <input type="password" id="reg-password" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="At least 8 characters"
                         class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                 </div>
-                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Create Account</button>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Create Account</button>
+                    <button type="button" onclick="closeModal('auth-modal')" class="px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-xl text-sm transition">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
@@ -512,7 +526,8 @@
                 type: document.getElementById('filter-type').value,
                 category: document.getElementById('filter-category').value,
                 status: document.getElementById('filter-status').value,
-                date: document.getElementById('filter-date').value
+                dateFrom: document.getElementById('filter-date-from').value,
+                dateTo: document.getElementById('filter-date-to').value
             };
             for (const [key, value] of Object.entries(fields)) if (value) params.set(key, value);
 
@@ -529,7 +544,7 @@
         }
 
         function resetFilters() {
-            ['search-input', 'filter-type', 'filter-category', 'filter-status', 'filter-date']
+            ['search-input', 'filter-type', 'filter-category', 'filter-status', 'filter-date-from', 'filter-date-to']
                 .forEach((id) => { document.getElementById(id).value = ''; });
             filterReports();
         }
@@ -664,6 +679,9 @@
                 <div class="flex flex-col gap-2">
                     ${canManage ? `
                         <div class="flex gap-2">
+                            <button onclick="showEditReportForm(${Number(item.id)})" class="py-2.5 px-4 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-xl transition">
+                                Edit Report
+                            </button>
                             <button onclick="setReportStatus(${Number(item.id)}, '${isResolved ? 'Active' : 'Resolved'}')" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl transition">
                                 ${isResolved ? 'Reopen Case' : 'Mark as Resolved'}
                             </button>
@@ -678,6 +696,65 @@
                 </div>`;
 
             openModal('detail-modal');
+        }
+
+        async function showEditReportForm(id) {
+            let item;
+            try {
+                item = await api(`/reports/${Number(id)}`);
+            } catch (err) {
+                showToast(err.message, 'error');
+                return;
+            }
+
+            const canEdit = currentUser && (currentUser.role === 'admin' || item.isOwner);
+            if (!canEdit) {
+                showToast('Only the reporter or an administrator can edit this report.', 'error');
+                return;
+            }
+
+            document.getElementById('detail-content').innerHTML = `
+                <h2 class="text-xl font-bold mb-4">Edit Report</h2>
+                <form id="edit-report-form" onsubmit="handleEditReportSubmit(event, ${Number(item.id)})" class="space-y-4">
+                    <div>
+                        <label for="edit-report-title" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Title</label>
+                        <input id="edit-report-title" name="title" type="text" required minlength="3" maxlength="120" value="${escapeHtml(item.title)}" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit-report-location" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Location</label>
+                            <input id="edit-report-location" name="location" type="text" required minlength="2" maxlength="120" value="${escapeHtml(item.location)}" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                        </div>
+                        <div>
+                            <label for="edit-report-date" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Date Occurred</label>
+                            <input id="edit-report-date" name="date" type="date" required value="${escapeHtml(item.date)}" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit-report-description" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Description</label>
+                        <textarea id="edit-report-description" name="description" rows="4" required minlength="10" maxlength="2000" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">${escapeHtml(item.description)}</textarea>
+                    </div>
+                    <div>
+                        <label for="edit-report-contact" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contact Information</label>
+                        <input id="edit-report-contact" name="contact" type="text" required minlength="5" maxlength="120" value="${escapeHtml(item.contact)}" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium text-xs rounded-xl transition">Save Changes</button>
+                        <button type="button" onclick="viewDetails(${Number(item.id)})" class="py-2.5 px-4 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-xl transition">Cancel</button>
+                    </div>
+                </form>`;
+        }
+
+        async function handleEditReportSubmit(event, id) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            await withBusy(form, async () => {
+                const body = Object.fromEntries(new FormData(form).entries());
+                await api(`/reports/${Number(id)}`, { method: 'PATCH', body });
+                showToast('Report updated.');
+                await filterReports();
+                await viewDetails(id);
+            });
         }
 
         async function setReportStatus(id, status) {

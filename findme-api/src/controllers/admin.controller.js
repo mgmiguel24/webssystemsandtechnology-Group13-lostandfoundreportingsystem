@@ -2,12 +2,10 @@ const Users = require('../models/user.model');
 const validators = require('../utils/validators');
 const { parse, HttpError } = require('../utils/http');
 
-// GET /api/admin/users
 function listUsers(req, res) {
   res.json({ items: Users.list() });
 }
 
-// PATCH /api/admin/users/:id/role   body: { "role": "admin" | "user" }
 function setRole(req, res) {
   const id = parse(validators.id, req.params.id);
   const { role } = parse(validators.role, req.body);

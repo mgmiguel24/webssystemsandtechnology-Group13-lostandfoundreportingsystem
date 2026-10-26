@@ -1,4 +1,3 @@
-// Photo uploads: images only, size-limited, saved under random names.
 const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');

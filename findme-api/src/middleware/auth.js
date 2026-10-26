@@ -1,4 +1,3 @@
-// Identity and permission checks, run on the server before any protected action.
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const Users = require('../models/user.model');
@@ -56,9 +55,9 @@ function ownerOrAdmin(req, res, next) {
 function setSessionCookie(res, user) {
   const token = jwt.sign({ sub: String(user.id) }, config.jwtSecret, { expiresIn: `${config.sessionHours}h` });
   res.cookie(COOKIE, token, {
-    httpOnly: true, // JavaScript in the page cannot read it
-    sameSite: 'lax', // not sent on cross-site form posts
-    secure: config.isProd, // HTTPS only in production
+    httpOnly: true, // Prevents scripts from reading the session token.
+    sameSite: 'lax', // Limits cross-site cookie use to reduce CSRF risk.
+    secure: config.isProd, // Prevents sending the cookie over plain HTTP in production.
     maxAge: config.sessionHours * 3600 * 1000,
     path: '/',
   });

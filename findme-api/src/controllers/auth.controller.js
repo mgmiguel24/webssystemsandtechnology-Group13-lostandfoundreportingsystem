@@ -12,6 +12,7 @@ async function register(req, res) {
   const { name, email, password } = parse(validators.register, req.body);
   if (Users.findByEmail(email)) throw new HttpError(409, 'An account with this email already exists. Please sign in instead.');
 
+  // Store a one-way hash so a database leak does not expose account passwords.
   const passwordHash = await bcrypt.hash(password, 12);
   const user = Users.create({ name, email, passwordHash });
   setSessionCookie(res, user);

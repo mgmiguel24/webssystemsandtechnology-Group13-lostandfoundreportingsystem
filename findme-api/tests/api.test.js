@@ -156,10 +156,26 @@ test('date range filters include only reports within the requested bounds', asyn
   assert.ok(res.data.items.every((report) => report.date >= '2026-08-29' && report.date <= '2026-10-01'));
 });
 
+test('dateFrom and dateTo filters work independently', async () => {
+  const from = await guest('GET', '/api/reports?dateFrom=2026-09-01');
+  assert.ok(from.data.items.length > 0);
+  assert.ok(from.data.items.every((report) => report.date >= '2026-09-01'));
+
+  const to = await guest('GET', '/api/reports?dateTo=2026-08-29');
+  assert.ok(to.data.items.length > 0);
+  assert.ok(to.data.items.every((report) => report.date <= '2026-08-29'));
+});
+
 test('exact date filter remains supported', async () => {
   const res = await guest('GET', '/api/reports?date=2026-10-01');
   assert.ok(res.data.items.length > 0);
   assert.ok(res.data.items.every((report) => report.date === '2026-10-01'));
+});
+
+test('exact and range date filters reject invalid dates', async () => {
+  assert.equal((await guest('GET', '/api/reports?date=2026-02-30')).status, 400);
+  assert.equal((await guest('GET', '/api/reports?dateFrom=not-a-date')).status, 400);
+  assert.equal((await guest('GET', '/api/reports?dateTo=2026-13-01')).status, 400);
 });
 
 test('only the owner or an admin can change status', async () => {
