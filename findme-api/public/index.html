@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FindMe | Community Lost & Found</title>
+    <script>
+        // Applies the saved theme before the page paints, so there is no light flash in dark mode.
+        try {
+            if (localStorage.getItem('findme_theme') === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) { /* storage blocked: default to light */ }
+    </script>
+    <!-- Tailwind CSS CDN for modern utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons for modern minimalist iconography -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="ph-bold ph-magnifying-glass text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">FindMe</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Community Lost & Found</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDarkMode()" class="p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition" title="Toggle Theme">
+                    <i id="theme-icon" class="ph-bold ph-moon text-xl"></i>
+                </button>
+
+                <div id="user-display" class="hidden items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-sm">
+                    <i class="ph-bold ph-user-circle text-brand-600 text-lg"></i>
+                    <span id="username-val" class="font-medium">Guest</span>
+                    <span id="role-badge" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">User</span>
+                </div>
+
+                <button id="login-btn" onclick="openAuthModal('login')" class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-xl text-sm transition">
+                    Login / Register
+                </button>
+
+                <button id="logout-btn" onclick="handleLogout()" class="hidden px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 font-medium rounded-xl text-sm transition">
+                    Logout
+                </button>
+
+                <button onclick="openReportModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-sm transition shadow-md shadow-brand-500/20 flex items-center space-x-2">
+                    <i class="ph-bold ph-plus"></i>
+                    <span class="hidden sm:inline">New Report</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- Search and filters -->
+        <section class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/80 mb-8 space-y-4">
+            <div class="relative">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" id="search-input" oninput="scheduleFilter()" placeholder="Search keywords, items, titles, or locations..."
+                    class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm transition">
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <select id="filter-type" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Types (Lost & Found)</option>
+                    <option value="Lost">Lost</option>
+                    <option value="Found">Found</option>
+                </select>
+
+                <select id="filter-category" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Categories</option>
+                    <option value="Person">Person</option>
+                    <option value="Pet">Pet</option>
+                    <option value="Item">Item</option>
+                </select>
+
+                <select id="filter-status" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Case Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+
+                <input type="date" id="filter-date" onchange="filterReports()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+        </section>
+
+        <section id="reports-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></section>
+
+        <p id="results-note" class="hidden text-center text-xs text-slate-500 dark:text-slate-400 mt-6"></p>
+
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <i id="empty-icon" class="ph-bold ph-tray text-2xl"></i>
+            </div>
+            <h3 id="empty-title" class="font-semibold text-lg mb-1">No reports matching your criteria</h3>
+            <p id="empty-text" class="text-slate-500 dark:text-slate-400 text-sm">Try adjusting your filters or search keywords.</p>
+        </div>
+    </main>
+
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 bg-white dark:bg-slate-900">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            FindMe Community Lost &amp; Found &copy; 2026. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Toast message (replaces browser alert pop-ups) -->
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-xl shadow-xl text-sm font-medium"></div>
+
+    <!-- MODAL: Sign in / Register -->
+    <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+
+            <div class="flex border-b border-slate-200 dark:border-slate-700 mb-6">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">Sign In</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600">Register Account</button>
+            </div>
+
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required autocomplete="email" placeholder="user@example.com"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                    <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Log In</button>
+            </form>
+
+            <!-- Role selection removed: every new account is a regular user. Admins are promoted by an existing admin. -->
+            <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Full Name / Username</label>
+                    <input type="text" id="reg-username" required minlength="2" maxlength="80" autocomplete="name" placeholder="John Doe"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="reg-email" required autocomplete="email" placeholder="john@example.com"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                    <input type="password" id="reg-password" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="At least 8 characters"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: New report -->
+    <div id="report-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('report-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+            <h2 class="text-xl font-bold mb-1">File a Community Report</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-xs mb-6">Fill in details accurately to increase chances of recovery.</p>
+
+            <form id="report-form" onsubmit="handleReportSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Report Type</label>
+                        <select id="report-type" name="type" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                            <option value="Lost">I Lost Something</option>
+                            <option value="Found">I Found Something</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                        <select id="report-category" name="category" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                            <option value="Person">Person</option>
+                            <option value="Pet">Pet</option>
+                            <option value="Item">Item</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Title / Identifier</label>
+                    <input type="text" id="report-title" name="title" required minlength="3" maxlength="120" placeholder="e.g., Gold Retriever or Black Leather Wallet"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Location</label>
+                        <input type="text" id="report-location" name="location" required minlength="2" maxlength="120" placeholder="e.g., Central Park East"
+                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Date Occurred</label>
+                        <input type="date" id="report-date" name="date" required
+                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Detailed Description</label>
+                    <textarea id="report-desc" name="description" rows="3" required minlength="10" maxlength="2000" placeholder="Include specific characteristics, markings, clothing, unique IDs, etc."
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contact Information</label>
+                    <input type="text" id="report-contact" name="contact" required minlength="5" maxlength="120" placeholder="Phone number or direct email"
+                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    <p class="text-[11px] text-slate-400 mt-1">Only signed-in members can see this.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Photo Attachment (JPEG, PNG, WebP or GIF, up to 5 MB)</label>
+                    <input type="file" id="report-image" name="image" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewImage(event)"
+                        class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    <img id="image-preview" class="hidden mt-2 rounded-xl h-32 w-full object-cover border border-slate-200 dark:border-slate-700" alt="Selected photo preview">
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition shadow-lg shadow-brand-500/20">Submit Case Report</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Report details -->
+    <div id="detail-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('detail-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 z-10">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * FindMe front end. All data now comes from the Express API under /api.
+         * The browser keeps only the theme preference; accounts, sessions and reports live on the server.
+         */
+
+        const MAX_PHOTO_MB = 5;
+        let currentUser = null;   // { id, name, email, role } or null for guests
+        let reports = [];         // reports currently shown in the grid
+        let listRequestId = 0;    // ignores slow responses that arrive after a newer search
+        let searchTimer = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            syncThemeIcon();
+            document.getElementById('report-date').max = todayLocal();
+            await loadSession();
+            await filterReports();
+        });
+
+        /* ---------- API helper ---------- */
+
+        // Sends a request to the backend and returns the JSON reply, or throws with the server's message.
+        async function api(path, options = {}) {
+            const opts = { credentials: 'same-origin', ...options };
+            if (opts.body && !(opts.body instanceof FormData)) {
+                opts.headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+                opts.body = JSON.stringify(opts.body);
+            }
+            let res;
+            try {
+                res = await fetch('/api' + path, opts);
+            } catch {
+                throw new Error('Cannot reach the server. Make sure it is running (npm start).');
+            }
+            let data = null;
+            try { data = await res.json(); } catch { /* empty or non-JSON reply */ }
+            if (!res.ok) throw new Error((data && data.error) || `Request failed (${res.status}).`);
+            return data;
+        }
+
+        /* ---------- Small UI helpers ---------- */
+
+        function showToast(message, kind = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-xl shadow-xl text-sm font-medium ' +
+                (kind === 'error' ? 'bg-red-600 text-white' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => toast.classList.add('hidden'), 4000);
+        }
+
+        // Disables a form's submit button while a request runs, and shows any error as a toast.
+        async function withBusy(form, task) {
+            const btn = form.querySelector('button[type="submit"]');
+            const label = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Please wait...';
+            try {
+                await task();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = label;
+            }
+        }
+
+        function todayLocal() {
+            const d = new Date();
+            return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        }
+
+        // Server timestamps are UTC ("YYYY-MM-DD HH:MM:SS"); show them in the viewer's local time.
+        function formatTimestamp(s) {
+            const d = new Date(String(s).replace(' ', 'T') + 'Z');
+            return Number.isNaN(d.getTime()) ? s : d.toLocaleString();
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[m]);
+        }
+
+        /* ---------- Theme ---------- */
+
+        // The class goes on <html> so Tailwind's dark: styles apply to <body> as well.
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('findme_theme', isDark ? 'dark' : 'light'); } catch { /* ignore */ }
+            syncThemeIcon();
+        }
+
+        function syncThemeIcon() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon').className = isDark ? 'ph-bold ph-sun text-xl text-yellow-400' : 'ph-bold ph-moon text-xl';
+        }
+
+        /* ---------- Modals ---------- */
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function openAuthModal(defaultTab = 'login') {
+            switchAuthTab(defaultTab);
+            openModal('auth-modal');
+        }
+
+        function switchAuthTab(tab) {
+            const active = 'flex-1 pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600';
+            const idle = 'flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600';
+            const isLogin = tab === 'login';
+            document.getElementById('tab-login').className = isLogin ? active : idle;
+            document.getElementById('tab-register').className = isLogin ? idle : active;
+            document.getElementById('login-form').classList.toggle('hidden', !isLogin);
+            document.getElementById('register-form').classList.toggle('hidden', isLogin);
+        }
+
+        /* ---------- Session ---------- */
+
+        async function loadSession() {
+            try {
+                currentUser = (await api('/auth/me')).user;
+            } catch {
+                currentUser = null;
+            }
+            updateUserHeaderUI();
+        }
+
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            await withBusy(form, async () => {
+                const data = await api('/auth/register', {
+                    method: 'POST',
+                    body: {
+                        name: document.getElementById('reg-username').value.trim(),
+                        email: document.getElementById('reg-email').value.trim(),
+                        password: document.getElementById('reg-password').value
+                    }
+                });
+                currentUser = data.user;
+                updateUserHeaderUI();
+                closeModal('auth-modal');
+                form.reset();
+                showToast(`Welcome, ${currentUser.name}. Your account is ready.`);
+                await filterReports(); // keeps the active filters
+            });
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            await withBusy(form, async () => {
+                const data = await api('/auth/login', {
+                    method: 'POST',
+                    body: {
+                        email: document.getElementById('login-email').value.trim(),
+                        password: document.getElementById('login-password').value
+                    }
+                });
+                currentUser = data.user;
+                updateUserHeaderUI();
+                closeModal('auth-modal');
+                form.reset();
+                showToast(`Signed in as ${currentUser.name}.`);
+                await filterReports();
+            });
+        }
+
+        async function handleLogout() {
+            try { await api('/auth/logout', { method: 'POST' }); } catch { /* still clear locally */ }
+            currentUser = null;
+            updateUserHeaderUI();
+            showToast('You have been signed out.');
+            await filterReports();
+        }
+
+        function updateUserHeaderUI() {
+            const userDisplay = document.getElementById('user-display');
+            const roleBadge = document.getElementById('role-badge');
+            const signedIn = Boolean(currentUser);
+
+            if (signedIn) {
+                document.getElementById('username-val').textContent = currentUser.name;
+                roleBadge.textContent = currentUser.role;
+                roleBadge.className = currentUser.role === 'admin'
+                    ? 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                    : 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300';
+            }
+            userDisplay.classList.toggle('hidden', !signedIn);
+            userDisplay.classList.toggle('flex', signedIn);
+            document.getElementById('login-btn').classList.toggle('hidden', signedIn);
+            document.getElementById('logout-btn').classList.toggle('hidden', !signedIn);
+        }
+
+        /* ---------- Reports ---------- */
+
+        function openReportModal() {
+            if (!currentUser) {
+                showToast('Please sign in or create an account to file a report.');
+                openAuthModal('login');
+                return;
+            }
+            document.getElementById('report-date').max = todayLocal();
+            openModal('report-modal');
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('image-preview');
+            if (!file) { preview.classList.add('hidden'); return; }
+            if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+                showToast(`Photo must be ${MAX_PHOTO_MB} MB or smaller.`, 'error');
+                event.target.value = '';
+                preview.classList.add('hidden');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => { preview.src = e.target.result; preview.classList.remove('hidden'); };
+            reader.readAsDataURL(file);
+        }
+
+        async function handleReportSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            await withBusy(form, async () => {
+                const body = new FormData(form); // field names match the API
+                if (!document.getElementById('report-image').files.length) body.delete('image');
+                await api('/reports', { method: 'POST', body });
+                closeModal('report-modal');
+                form.reset();
+                document.getElementById('image-preview').classList.add('hidden');
+                showToast('Your report has been published.');
+                await filterReports();
+            });
+        }
+
+        // Waits until the user pauses typing before searching, so we do not send a request per key.
+        function scheduleFilter() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(filterReports, 250);
+        }
+
+        async function filterReports() {
+            const params = new URLSearchParams({ limit: '100' });
+            const fields = {
+                q: document.getElementById('search-input').value.trim(),
+                type: document.getElementById('filter-type').value,
+                category: document.getElementById('filter-category').value,
+                status: document.getElementById('filter-status').value,
+                date: document.getElementById('filter-date').value
+            };
+            for (const [key, value] of Object.entries(fields)) if (value) params.set(key, value);
+
+            const requestId = ++listRequestId;
+            try {
+                const data = await api('/reports?' + params.toString());
+                if (requestId !== listRequestId) return;
+                reports = data.items;
+                renderReports(reports, data.total);
+            } catch (err) {
+                if (requestId !== listRequestId) return;
+                renderError(err.message);
+            }
+        }
+
+        function resetFilters() {
+            ['search-input', 'filter-type', 'filter-category', 'filter-status', 'filter-date']
+                .forEach((id) => { document.getElementById(id).value = ''; });
+            filterReports();
+        }
+
+        function setEmptyState(visible, icon, title, text) {
+            const box = document.getElementById('empty-state');
+            box.classList.toggle('hidden', !visible);
+            if (!visible) return;
+            document.getElementById('empty-icon').className = `ph-bold ${icon} text-2xl`;
+            document.getElementById('empty-title').textContent = title;
+            document.getElementById('empty-text').textContent = text;
+        }
+
+        function renderError(message) {
+            document.getElementById('reports-grid').innerHTML = '';
+            document.getElementById('results-note').classList.add('hidden');
+            setEmptyState(true, 'ph-plugs', 'Reports could not be loaded', message);
+        }
+
+        function badgeClass(item) {
+            if (item.status === 'Resolved') return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+            return item.type === 'Lost'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+        }
+
+        function renderReports(items, total = items.length) {
+            const grid = document.getElementById('reports-grid');
+            const note = document.getElementById('results-note');
+            grid.innerHTML = '';
+
+            if (items.length === 0) {
+                note.classList.add('hidden');
+                setEmptyState(true, 'ph-tray', 'No reports matching your criteria', 'Try adjusting your filters or search keywords.');
+                return;
+            }
+            setEmptyState(false);
+            note.classList.toggle('hidden', total <= items.length);
+            note.textContent = `Showing the newest ${items.length} of ${total} reports. Narrow your search to see the rest.`;
+
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            items.forEach((item) => {
+                const isResolved = item.status === 'Resolved';
+                const canManage = isAdmin || item.isOwner;
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group';
+                card.innerHTML = `
+                    <div class="relative h-48 bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                        <img src="${escapeHtml(item.imageUrl)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="${escapeHtml(item.title)}">
+                        <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeClass(item)}">
+                            ${isResolved ? 'Resolved' : escapeHtml(item.type + ' • ' + item.category)}
+                        </span>
+                        ${canManage ? `
+                            <span class="absolute top-3 right-3 px-2 py-1 bg-slate-900/70 backdrop-blur-md text-white text-[10px] font-bold rounded-md">
+                                ${item.isOwner ? 'Your Post' : 'Admin Access'}
+                            </span>` : ''}
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-base mb-1 line-clamp-1">${escapeHtml(item.title)}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-1">
+                                <i class="ph-bold ph-map-pin mr-1"></i> ${escapeHtml(item.location)}
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-3">
+                                <i class="ph-bold ph-calendar mr-1"></i> ${escapeHtml(item.date)}
+                            </p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">${escapeHtml(item.description)}</p>
+                        </div>
+                        <button onclick="viewDetails(${Number(item.id)})" class="w-full py-2 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition">
+                            View Details
+                        </button>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        async function viewDetails(id) {
+            let item;
+            try {
+                item = await api(`/reports/${Number(id)}`);
+            } catch (err) {
+                showToast(err.message, 'error');
+                return;
+            }
+
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const canManage = isAdmin || item.isOwner;
+            const isResolved = item.status === 'Resolved';
+
+            const contactBlock = item.contactHidden
+                ? `<p class="text-xs text-brand-600 dark:text-brand-400">Sign in to see how to reach the reporter.</p>
+                   <button onclick="closeModal('detail-modal'); openAuthModal('login')" class="mt-2 text-xs font-semibold underline text-brand-700 dark:text-brand-300">Sign in</button>`
+                : `<p class="text-xs text-brand-600 dark:text-brand-400 font-medium">${escapeHtml(item.contact)}</p>`;
+
+            const historyBlock = Array.isArray(item.history) && item.history.length
+                ? `<div class="mb-6">
+                       <h4 class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Case History</h4>
+                       <ol class="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                           ${item.history.map((h) => `<li>${escapeHtml(h.action)} by ${escapeHtml(h.byName || 'a removed user')} on ${escapeHtml(formatTimestamp(h.at))}</li>`).join('')}
+                       </ol>
+                   </div>`
+                : '';
+
+            document.getElementById('detail-content').innerHTML = `
+                <span class="inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-2 ${badgeClass(item)}">
+                    ${isResolved ? 'Resolved' : escapeHtml(item.type + ' • ' + item.category)}
+                </span>
+                <h2 class="text-xl font-bold mb-3">${escapeHtml(item.title)}</h2>
+                <img src="${escapeHtml(item.imageUrl)}" class="w-full h-56 object-cover rounded-xl mb-4 border border-slate-200 dark:border-slate-700" alt="${escapeHtml(item.title)}">
+
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    <div><strong>Location:</strong> ${escapeHtml(item.location)}</div>
+                    <div><strong>Date:</strong> ${escapeHtml(item.date)}</div>
+                    <div><strong>Reporter:</strong> ${escapeHtml(item.reporterName)}</div>
+                    <div><strong>Status:</strong> ${escapeHtml(item.status)}</div>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Description:</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50 whitespace-pre-line">${escapeHtml(item.description)}</p>
+                </div>
+
+                <div class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 p-3 rounded-xl mb-6">
+                    <h4 class="text-xs font-semibold text-brand-700 dark:text-brand-300 mb-1 flex items-center">
+                        <i class="ph-bold ph-phone mr-1"></i> Contact Information
+                    </h4>
+                    ${contactBlock}
+                </div>
+
+                ${historyBlock}
+
+                <div class="flex flex-col gap-2">
+                    ${canManage ? `
+                        <div class="flex gap-2">
+                            <button onclick="setReportStatus(${Number(item.id)}, '${isResolved ? 'Active' : 'Resolved'}')" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl transition">
+                                ${isResolved ? 'Reopen Case' : 'Mark as Resolved'}
+                            </button>
+                            ${isAdmin ? `
+                                <button onclick="deleteReport(${Number(item.id)})" class="py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-medium text-xs rounded-xl transition">
+                                    Delete Case
+                                </button>` : ''}
+                        </div>` : ''}
+                    <button onclick="closeModal('detail-modal')" class="w-full py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-xl transition">
+                        Close
+                    </button>
+                </div>`;
+
+            openModal('detail-modal');
+        }
+
+        async function setReportStatus(id, status) {
+            const verb = status === 'Resolved' ? 'mark this case as resolved' : 'reopen this case';
+            if (!confirm(`Do you want to ${verb}?`)) return;
+            try {
+                await api(`/reports/${Number(id)}/status`, { method: 'PATCH', body: { status } });
+                showToast(status === 'Resolved' ? 'Case marked as resolved.' : 'Case reopened.');
+                await filterReports();
+                await viewDetails(id);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteReport(id) {
+            if (!confirm('Are you sure you want to remove this report? It will no longer be visible to anyone.')) return;
+            try {
+                await api(`/reports/${Number(id)}`, { method: 'DELETE' });
+                closeModal('detail-modal');
+                showToast('Report removed.');
+                await filterReports();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
