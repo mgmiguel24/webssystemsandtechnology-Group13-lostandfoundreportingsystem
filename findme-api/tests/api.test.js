@@ -261,6 +261,9 @@ test('controller rejects demoting the sole administrator', () => {
 });
 
 test('report creation is rate limited', async () => {
+  const login = await alice('POST', '/api/auth/login', { email: 'alice@test.local', password: 'password123' });
+  assert.equal(login.status, 200);
+
   // Five authorized POSTs above were counted; these five complete the allowance.
   for (let i = 0; i < 5; i += 1) {
     const res = await alice('POST', '/api/reports', reportForm({ title: `Rate Limited Test ${i}` }));
