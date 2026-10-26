@@ -5,7 +5,6 @@ const { looksLikeImage, removeFile } = require('../middleware/upload');
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=600&q=80';
 
-// GET /api/reports  (public; contact details are never included in the list)
 function list(req, res) {
   const query = parse(validators.listQuery, req.query);
   const { rows, total } = Reports.list(query);
@@ -17,7 +16,6 @@ function list(req, res) {
   });
 }
 
-// GET /api/reports/:id  (public; contact only for signed-in users; history for owner or admin)
 function get(req, res) {
   const id = parse(validators.id, req.params.id);
   const row = Reports.findById(id);
@@ -29,7 +27,6 @@ function get(req, res) {
   res.json(dto);
 }
 
-// POST /api/reports  (signed in; multipart form with an optional "image" file)
 function create(req, res) {
   try {
     if (req.file && !looksLikeImage(req.file.path)) {
@@ -48,21 +45,18 @@ function create(req, res) {
   }
 }
 
-// PATCH /api/reports/:id/status  (owner or admin)
 function setStatus(req, res) {
   const { status } = parse(validators.status, req.body);
   const row = Reports.setStatus(req.report.id, status, req.user.id);
   res.json(Reports.toDto(row, req.user, { includeContact: true }));
 }
 
-// PATCH /api/reports/:id (owner or admin)
 function update(req, res) {
   const data = parse(validators.updateReport, req.body);
   const row = Reports.update(req.report.id, data, req.user.id);
   res.json(Reports.toDto(row, req.user, { includeContact: true }));
 }
 
-// DELETE /api/reports/:id  (admin only; soft delete)
 function remove(req, res) {
   Reports.softDelete(req.report.id, req.user.id);
   res.json({ ok: true });

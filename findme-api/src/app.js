@@ -1,9 +1,8 @@
-// Builds the Express application: security headers, API routes, then the web page.
 const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const config = require('./config/env');
-require('./db'); // creates tables and seeds on first run
+require('./db');
 
 const authRoutes = require('./routes/auth.routes');
 const reportRoutes = require('./routes/reports.routes');

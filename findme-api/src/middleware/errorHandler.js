@@ -1,4 +1,3 @@
-// One place that turns every error into a clean JSON reply with the right status code.
 const multer = require('multer');
 const config = require('../config/env');
 

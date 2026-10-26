@@ -1,11 +1,10 @@
-// All database access for reports and their history.
 const db = require('../db');
 
 const SELECT = `
   SELECT r.*, u.name AS reporter_name
   FROM reports r JOIN users u ON u.id = r.reporter_id`;
 
-// Shapes a database row for the browser. Contact is included only when asked.
+// Keep contact details out of list responses unless explicitly requested.
 function toDto(row, viewer, { includeContact = false } = {}) {
   const dto = {
     id: row.id,
